@@ -1,9 +1,11 @@
 ## How to 
 
-> pip3 install -r requirements.txt
+Install required packages to run script
+
+`pip3 install -r requirements.txt`
 
 Rename .env-sample to .env and update environment variables as per your environment
 
 The run the script with 
 
-> python3 exporter.py 
+`python3 exporter.py`
