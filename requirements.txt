@@ -1,0 +1,7 @@
+panda
+aiohttp
+asyncio
+humanize
+boto3
+botocore
+python-dotenv
