@@ -9,6 +9,9 @@ from checkpoints import *
 from s3_file_exporter import *
 
 def main():
+    if duration == 0:
+        logging.error("Incorrect duration set, please check your date_from and since_to variables")
+        return
     global fatal_errors
     global timestamps_processed  
     global rolling_total
@@ -29,8 +32,13 @@ def main():
     start_time = time.time()
 
     # Output information regarding current configuration
-    logging.info("Processing data from "+date_since+" to "+date_to)  
-    logging.info("Total amount time to export data for is "+str(datetime.timedelta(seconds=duration))+" hours")
+    logging.info("Processing data from "+date_since+" to "+date_to)
+    if duration <=60:
+        logging.info("Total amount time to export data for is "+str(duration)+" seconds")
+    elif duration > 60 and duration < 3600:
+        logging.info("Total amount time to export data for is "+str(datetime.timedelta(seconds=duration))+" minutes")
+    else:
+        logging.info("Total amount time to export data for is "+str(datetime.timedelta(seconds=duration))+" hours")
     
     
     total_number_records=make_request_total(str(int(unix_time_since)),str(int(unix_time_to)))

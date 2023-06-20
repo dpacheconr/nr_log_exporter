@@ -174,9 +174,16 @@ async def obtain_time_series_data():
     global duration
     async with aiohttp.ClientSession() as session:
         tasks = []
-        if duration > 1296000: # check if it's more than 15 days, more than 366 buckets
+        if duration >= 1296000: # check if it's more than 15 days
             tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 day",0)))
-        else:
+        elif duration > 60 and duration <= 3600: # check if it's less than 1 hour
+            if duration%60==0:
+                tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 minute",1)))
+            else:
+                tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 second",2)))
+        elif duration <= 60: # check if it's less than 1 minute
+            tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 second",2)))
+        else: # that means all other requests we will be requesting in 1 hour series
             tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 hour",0)))
         await asyncio.gather(*tasks)
         
