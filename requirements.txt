@@ -1,4 +1,4 @@
-panda
+pandas
 aiohttp
 asyncio
 humanize
