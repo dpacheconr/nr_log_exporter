@@ -123,8 +123,8 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
                 for item in data:
                     c_data=item
                     requests_queue.put([c_data,c_iteration,series,iteration])
-        except Exception as e:
-            logging.error("Unable to obtain data from API for this timeseries due to "+str(e)+" "+str(datetime.datetime.fromtimestamp(int(c_since))) + " and " + str(datetime.datetime.fromtimestamp(int(c_until))))
+        except:
+            logging.error("Unable to obtain data from API for this timeseries -> "+str(datetime.datetime.fromtimestamp(int(c_since))) + " and " + str(datetime.datetime.fromtimestamp(int(c_until)))+ ", will retry.")
 
 async def worker():
     global timestamps_processed
