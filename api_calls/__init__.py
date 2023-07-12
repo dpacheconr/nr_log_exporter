@@ -249,6 +249,13 @@ async def process_raw_data(final_sorted_timestamps_to_fecth_data):
         logging.info("Total number records expected after parsing raw data")       
         return True
     
+
+def divide_chunks(l, n):
+      
+    # looping till length l
+    for i in range(0, len(l), n): 
+        yield l[i:i + n]
+  
 def generate_csv():
     global retry
     global s3_client
@@ -256,9 +263,11 @@ def generate_csv():
     df = pd.DataFrame()
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
     try:
-        filename="exported_data_"+timestr+".csv"
         df=pd.concat(panda_frames_lst, ignore_index=True)
-        df.to_csv(filename, encoding='utf-8')
+        x = list(divide_chunks(df,100000))
+        for idx,i in enumerate(x):
+            filename="exported_data_"+timestr+"_"+str(idx)+".csv"
+            i.to_csv(filename, encoding='utf-8')
         # Enable to push CSV to AWS S3
         # bucket = os.getenv("bucket")
         # with open(filename, "rb") as f:

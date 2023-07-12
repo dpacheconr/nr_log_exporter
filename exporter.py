@@ -59,6 +59,7 @@ def main():
             logging.error("Attempt number "+str(i))
             logging.error("Will backoff for 5 seconds first, before proceeding")
             time.sleep(5)
+            timestamps_processed.clear()
             i+=1
         if i == num_retries+1:
             logging.error("FATAL: Unable to obtain timeseries data without errors, exiting")
