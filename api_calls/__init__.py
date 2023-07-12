@@ -190,7 +190,7 @@ async def obtain_time_series_data():
     # create a task
     task = asyncio.create_task(worker())
     # create the wait for coroutine
-    wait_coro = asyncio.wait_for(task, timeout=60)
+    wait_coro = asyncio.wait_for(task, timeout=500)
     # wrap the wait coroutine in a task and execute
     wait_task = asyncio.create_task(wait_coro)
     # await the wait-for task
