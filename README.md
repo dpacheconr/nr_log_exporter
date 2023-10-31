@@ -1,3 +1,7 @@
+## New Relic Logs exporter
+
+>Export New Relic logs into CSV
+
 ## How to 
 
 Install required packages to run script
