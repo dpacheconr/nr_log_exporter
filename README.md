@@ -10,6 +10,6 @@ Install required packages to run script
 
 Rename .env-sample to .env and update environment variables as per your environment
 
-The run the script with 
+Then run the script with 
 
 `python3 exporter.py`
