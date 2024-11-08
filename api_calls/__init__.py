@@ -128,7 +128,7 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
 
 async def worker():
     global timestamps_processed
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
         current_total=0
         tasks = []
         while True:
@@ -172,7 +172,7 @@ async def task_cancel(other_task):
 # entry point coroutine
 async def obtain_time_series_data():
     global duration
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
         tasks = []
         if duration >= 1296000: # check if it's more than 15 days
             tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 day",0)))
@@ -211,7 +211,7 @@ async def process_raw_data(final_sorted_timestamps_to_fecth_data):
     tasks = [] 
     batchsize = max_workers
     logging.info("Requesting batches of "+str(max_workers))  
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
         for i in range(0, len(final_sorted_timestamps_to_fecth_data), batchsize):
             batch = final_sorted_timestamps_to_fecth_data[i:i+batchsize] 
             for item in batch:
