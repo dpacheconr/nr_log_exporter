@@ -48,7 +48,10 @@ requests_queue=Queue()
 date_since = os.getenv("DATE_SINCE")
 date_to = os.getenv("DATE_TO")
 query=os.getenv("QUERY")
-query_total= query.replace("*","count(*)")
+if "QUERY_TOTAL" in os.environ and os.getenv('QUERY_TOTAL') != "":
+    query_total=os.getenv("QUERY_TOTAL")
+else:
+    query_total= query.replace("*","count(*)")
 unix_time_since = datetime.datetime.timestamp(datetime.datetime.strptime(date_since,"%Y-%m-%d %H:%M:%S"))
 unix_time_to = datetime.datetime.timestamp(datetime.datetime.strptime(date_to,"%Y-%m-%d %H:%M:%S"))
 duration= int((unix_time_to-unix_time_since))

@@ -74,17 +74,16 @@ async def make_request(session,i):
     count= i["count"]
     global query
     data = None
-    logging.info("Obtaining raw data from "+str(datetime.datetime.fromtimestamp(int(s_since))) + " to " + str(datetime.datetime.fromtimestamp(int(s_since))))
+    logging.info("Obtaining raw data from "+str(datetime.datetime.fromtimestamp(int(s_since))) + " to " + str(datetime.datetime.fromtimestamp(int(s_until))))
     while data is None:
         try:
             headers = {
             'API-Key': NEW_RELIC_API_KEY,
-            }
-
+            }      
             json_data = {
             'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query+' since '+s_since+' until '+s_until+' LIMIT MAX") {\n results\n nrql\n }\n }\n }\n}\n',
             'variables': '',
-            }
+            }      
             async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data) as resp:
                 response = await resp.json()
                 if response['data']['actor']['account']['nrql']['results']:
