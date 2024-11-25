@@ -29,8 +29,9 @@ def check_env_vars():
 
 check_env_vars()
 
-# filename="log.txt",filemode='a'
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S')
+filename = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+logfilename="log_"+filename+".txt" 
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',level=logging.DEBUG,datefmt='%Y-%m-%d %H:%M:%S',filename=logfilename,filemode='a')
   
 # Initializing a queue
 q = Queue()
@@ -50,8 +51,14 @@ date_to = os.getenv("DATE_TO")
 query=os.getenv("QUERY")
 if "QUERY_TOTAL" in os.environ and os.getenv('QUERY_TOTAL') != "":
     query_total=os.getenv("QUERY_TOTAL")
+    query_total=query_total.replace("FACET","FACET eventtype(),")
+    query=query.replace("SELECT","SELECT eventtype(),")
 else:
     query_total= query.replace("*","count(*)")
+    
+logging.info("Query total: "+query_total)
+script_version = "25112024"
+logging.info("Script version: "+script_version)
 unix_time_since = datetime.datetime.timestamp(datetime.datetime.strptime(date_since,"%Y-%m-%d %H:%M:%S"))
 unix_time_to = datetime.datetime.timestamp(datetime.datetime.strptime(date_to,"%Y-%m-%d %H:%M:%S"))
 duration= int((unix_time_to-unix_time_since))

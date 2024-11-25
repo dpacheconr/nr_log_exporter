@@ -29,10 +29,6 @@ def parse_response(value):
             with lock:
                 total_number_records_from_temp_df+=len(temp_df.index)
             logging.info("Processed data for timestamps between "+ str(datetime.datetime.fromtimestamp(int(s_since))) + " and " + str(datetime.datetime.fromtimestamp(int(s_until))) + " added " + str(len(temp_df.index)) + " records to dataframe")
-        else:
-            with lock:
-                fatal_errors+=1
-            logging.error("received total "+str(len(temp_df.index))+" records from the API, but was expecting "+str(count))
     except Exception as e:
         with lock:
             number_errors_occured+=1
@@ -45,6 +41,7 @@ def make_request_total(s_since,s_until):
     global total_number_records
     response = None
     global query_total
+    logging.info("Querying total number records with query: "+query_total+" since "+s_since+" until "+s_until+" LIMIT MAX")
     while response is None:
         try:
             headers = {
@@ -52,19 +49,19 @@ def make_request_total(s_since,s_until):
             }
 
             json_data = {
-            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+s_since+' until '+s_until+' LIMIT MAX") {\n results\n }\n }\n }\n}\n',
+            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+s_since+' until '+s_until+' LIMIT MAX") {\ntotalResult\n }\n }\n }\n}\n',
             'variables': '',
             }
-            response = requests.post('https://api.newrelic.com/graphql', headers=headers, json=json_data)
-            data = json.loads(json.dumps(response.json()['data']['actor']['account']['nrql']['results']))
-            if total_number_records == 0:
-                total_number_records=int(data[0]['count'])
-                logging.info("Total number records in select period is: "+ str(humanize.intcomma(int(data[0]['count']))))
+            response = requests.post('https://api.newrelic.com/graphql', headers=headers, json=json_data, timeout=30)
+            data = json.loads(json.dumps(response.json()['data']['actor']['account']['nrql']['totalResult']['count']))
+            total_number_records=data
+            logging.info("Total number records in select period is: "+ str(total_number_records))
+            
         except:
             logging.error("Unable to obtain total number records from API, will retry")
             response=None
             continue
-    return int(data[0]['count'])
+    return total_number_records
 
 async def make_request(session,i):
     global q
@@ -74,6 +71,7 @@ async def make_request(session,i):
     count= i["count"]
     global query
     data = None
+    logging.debug("Obtaining raw data with query: "+query+" since "+s_since+" until "+s_until+" LIMIT MAX")
     logging.info("Obtaining raw data from "+str(datetime.datetime.fromtimestamp(int(s_since))) + " to " + str(datetime.datetime.fromtimestamp(int(s_until))))
     while data is None:
         try:
@@ -84,7 +82,7 @@ async def make_request(session,i):
             'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query+' since '+s_since+' until '+s_until+' LIMIT MAX") {\n results\n nrql\n }\n }\n }\n}\n',
             'variables': '',
             }      
-            async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data) as resp:
+            async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data, timeout=30) as resp:
                 response = await resp.json()
                 if response['data']['actor']['account']['nrql']['results']:
                     data = response['data']['actor']['account']['nrql']['results']
@@ -106,6 +104,7 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
     c_iteration=iteration
     response = None
     global query_total
+    logging.info("Obtaining timeseries data with query: "+query_total+" since "+str(int(c_since))+" until "+str(int(c_until))+" TIMESERIES "+series)
     while response is None:
         try:
             headers = {
@@ -115,16 +114,17 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
             'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\n results\n }\n }\n }\n}\n',
             'variables': '',
             }
-            async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data) as resp:
+            
+            async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data, timeout=30) as resp:
                 response = await resp.json()
                 data = response['data']['actor']['account']['nrql']['results']
                 c_iteration+=1
                 for item in data:
                     c_data=item
-                    requests_queue.put([c_data,c_iteration,series,iteration])
+                    requests_queue.put([c_data,c_iteration,series,iteration])        
         except:
             logging.error("Unable to obtain data from API for this timeseries -> "+str(datetime.datetime.fromtimestamp(int(c_since))) + " and " + str(datetime.datetime.fromtimestamp(int(c_until)))+ ", will retry.")
-
+     
 async def worker():
     global timestamps_processed
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
@@ -138,9 +138,8 @@ async def worker():
             c_iteration=data[1]
             c_since =c_data["beginTimeSeconds"]
             c_until=c_data["endTimeSeconds"]
-            c_iteration=data[1]
             if c_data["count"] > 1999:
-                if duration > 1296000: # check if it's more than 15 days, more than 366 buckets
+                if duration >= 1296000: # check if it's more than 15 days, more than 366 buckets
                     tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,c_since,c_until,"1 hour",0)))
                 else:
                     if c_iteration == 1:
@@ -150,13 +149,15 @@ async def worker():
                     else:
                         tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,c_since,c_until,"MAX",3))) # still needs testing as never hit this on any query, so may fail
             else:
-                current_total+=c_data["count"]
-                timestamps_processed.append(c_data)
+                if c_data["count"] != 0:
+                    current_total+=c_data["count"]
+                    timestamps_processed.append(c_data)
             
             await asyncio.gather(*tasks)
             if requests_queue.empty():
                 requests_queue.put(None)
 
+    logging.info("Worker processed records: "+str(current_total))  
 
 # another coroutine that cancels a task
 async def task_cancel(other_task):
@@ -173,9 +174,8 @@ async def obtain_time_series_data():
     global duration
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
         tasks = []
-        if duration >= 1296000: # check if it's more than 15 days
-            tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 day",0)))
-        elif duration > 60 and duration <= 3600: # check if it's less than 1 hour
+        logging.info("Duration: "+str(duration))
+        if duration > 60 and duration <= 3600: # check if it's less than 1 hour
             if duration%60==0:
                 tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 minute",1)))
             else:
@@ -185,7 +185,7 @@ async def obtain_time_series_data():
         else: # that means all other requests we will be requesting in 1 hour series
             tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 hour",0)))
         await asyncio.gather(*tasks)
-        
+            
     # create a task
     task = asyncio.create_task(worker())
     # create the wait for coroutine
@@ -202,7 +202,9 @@ async def obtain_time_series_data():
         asyncio.create_task(task_cancel(wait_task))
         logging.error('Wait for task was canceled externally')
 
+    
     logging.info('Finished obtaining timeseries data')
+    
 
     
 async def process_raw_data(final_sorted_timestamps_to_fecth_data): 
