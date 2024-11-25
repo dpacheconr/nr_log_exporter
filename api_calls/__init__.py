@@ -111,16 +111,17 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
             'API-Key': NEW_RELIC_API_KEY,
             }
             json_data = {
-            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\n results\n }\n }\n }\n}\n',
+            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\n totalResult\n }\n }\n }\n}\n',
             'variables': '',
             }
             
             async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data, timeout=30) as resp:
                 response = await resp.json()
-                data = response['data']['actor']['account']['nrql']['results']
+                data = response['data']['actor']['account']['nrql']['totalResult']
                 c_iteration+=1
                 for item in data:
                     c_data=item
+                    c_data
                     requests_queue.put([c_data,c_iteration,series,iteration])        
         except:
             logging.error("Unable to obtain data from API for this timeseries -> "+str(datetime.datetime.fromtimestamp(int(c_since))) + " and " + str(datetime.datetime.fromtimestamp(int(c_until)))+ ", will retry.")
@@ -175,7 +176,9 @@ async def obtain_time_series_data():
     async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
         tasks = []
         logging.info("Duration: "+str(duration))
-        if duration > 60 and duration <= 3600: # check if it's less than 1 hour
+        if duration >= 1296000: # check if it's more than 15 days
+            tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 day",0)))
+        elif duration > 60 and duration <= 3600: # check if it's less than 1 hour
             if duration%60==0:
                 tasks.append(asyncio.ensure_future(make_request_timeseries_async(session,unix_time_since,unix_time_to,"1 minute",1)))
             else:
