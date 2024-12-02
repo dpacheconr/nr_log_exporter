@@ -31,7 +31,8 @@ check_env_vars()
 
 filename = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 logfilename="log_"+filename+".txt" 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',level=logging.DEBUG,datefmt='%Y-%m-%d %H:%M:%S',filename=logfilename,filemode='a')
+# filename=logfilename,filemode='a'
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S')
   
 # Initializing a queue
 q = Queue()
