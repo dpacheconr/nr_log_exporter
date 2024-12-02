@@ -57,7 +57,7 @@ else:
     query_total= query.replace("*","count(*)")
     
 logging.info("Query total: "+query_total)
-script_version = "25112024"
+script_version = "02122024"
 logging.info("Script version: "+script_version)
 unix_time_since = datetime.datetime.timestamp(datetime.datetime.strptime(date_since,"%Y-%m-%d %H:%M:%S"))
 unix_time_to = datetime.datetime.timestamp(datetime.datetime.strptime(date_to,"%Y-%m-%d %H:%M:%S"))
@@ -78,3 +78,17 @@ max_workers=500
 NEW_RELIC_API_KEY = os.getenv("NEW_RELIC_API_KEY")
 NEW_ACCOUNT_ID = os.getenv("NEW_ACCOUNT_ID")
 retry=False
+if "REMOVE_DUPLICATES" in os.environ and os.getenv('REMOVE_DUPLICATES').lower() == "true":
+    REMOVE_DUPLICATES= True
+else:
+    REMOVE_DUPLICATES= False
+    
+if "RECORDS_PER_CSV" in os.environ and os.getenv('RECORDS_PER_CSV') != "":
+    # Ensure RECORDS_PER_CSV is an integer
+    RECORDS_PER_CSV = os.getenv('RECORDS_PER_CSV')
+    try:
+        RECORDS_PER_CSV = int(RECORDS_PER_CSV)
+    except ValueError:
+        raise ValueError("RECORDS_PER_CSV must be an integer")
+else:
+    RECORDS_PER_CSV = 100000

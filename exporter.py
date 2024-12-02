@@ -19,7 +19,7 @@ def main():
     global q
     global retry
     global num_retries
-    
+
     #Clear queues and counters
     retry=False
     rolling_total=0
@@ -103,21 +103,31 @@ def main():
     logging.info("Data obtained from New Relic API in "+str(datetime.timedelta(seconds=(time.time() - start_time)))+ " minutes")
 
     logging.info("Exporting to CSV")
-    generate_csv()
+    records_in_csv = generate_csv ()
         
     if number_errors_occured <=0 or fatal_errors<=1:
         logging.info("No errors ocurred")
     else:
-        if total_number_records == len(df.index):
-            logging.info("Number of errors occured: "+str(number_errors_occured))
-            logging.info("Errors ocurred " +str(number_errors_occured)+ ", but we were able to obtain all records on retries")
-            logging.info("Errors occured:  "+str(number_errors_occured)+" and fatal errors:  "+str(fatal_errors))
+        if not REMOVE_DUPLICATES:
+            if total_number_records == records_in_csv:
+                logging.info("Number of errors occured: "+str(number_errors_occured))
+                logging.info("Errors ocurred " +str(number_errors_occured)+ ", but we were able to obtain all records on retries")
+                logging.info("Errors occured:  "+str(number_errors_occured)+" and fatal errors:  "+str(fatal_errors))
+            else:
+                logging.error("FATAL ERROR OCURRED")
+                retry=True
+                return
         else:
-            logging.error("FATAL ERROR OCURRED EXIT")
-            retry=True
+            # DON'T EXPECT TO HIT THIS ERROR, SO WE WILL EXIT IN CASE WE DO
+            logging.error("UNEXPECTED FATAL ERROR OCURRED EXITING, OPEN A TICKET IN GITHUB")
+            retry=False
             return
-  
-    logging.info("The expected number records was "+str(total_number_records)+" and this is what we got!")
+            
+    if REMOVE_DUPLICATES:
+        logging.info("The expected number records was "+str(total_number_records)+" and this is what we got before removing duplicates!")
+        logging.info("After removing duplicates we ended up with "+str(records_in_csv)+" records")
+    else:
+        logging.info("The expected number records was "+str(total_number_records)+" and this is what we got!")
     logging.info("Total amount time it took to run script "+str(datetime.timedelta(seconds=(time.time() - start_time)))+ " minutes")
 
 if __name__ == "__main__":

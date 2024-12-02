@@ -264,11 +264,19 @@ def generate_csv():
     global retry
     global s3_client
     global panda_frames_lst
+    global REMOVE_DUPLICATES
+    global RECORDS_PER_CSV
     df = pd.DataFrame()
     timestr = time.strftime("%Y_%m_%d_%H_%M_%S")
     try:
         df=pd.concat(panda_frames_lst, ignore_index=True)
-        x = list(divide_chunks(df,100000))
+        # Remove the column 'eventType'
+        if 'eventType()' in df.columns:
+            df.drop(columns=['eventType()'], inplace=True)
+            
+        if REMOVE_DUPLICATES:
+            df.drop_duplicates(inplace=True)
+        x = list(divide_chunks(df,RECORDS_PER_CSV))
         for idx,i in enumerate(x):
             filename="exported_data_"+timestr+"_"+str(idx)+".csv"
             i.to_csv(filename, encoding='utf-8')
@@ -277,8 +285,10 @@ def generate_csv():
         # with open(filename, "rb") as f:
         #     s3_client.upload_fileobj(f, bucket, filename)
         # os.remove(filename)
-        logging.info("Number of records in CSV "+str(len(df. index)))
+        records_in_csv = len(df. index)
+        logging.info("Number of records in CSV "+str(records_in_csv))
     except Exception as e:
         logging.error("Unable to convert dataframe to CSV due to "+str(e))
         retry=True
-        return
+        return 
+    return records_in_csv
