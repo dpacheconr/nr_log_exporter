@@ -60,7 +60,7 @@ else:
     total_results_return = False
     
 logging.info("Query total: "+query_total)
-script_version = "02122024"
+script_version = "03122024"
 logging.info("Script version: "+script_version)
 unix_time_since = datetime.datetime.timestamp(datetime.datetime.strptime(date_since,"%Y-%m-%d %H:%M:%S"))
 unix_time_to = datetime.datetime.timestamp(datetime.datetime.strptime(date_to,"%Y-%m-%d %H:%M:%S"))
