@@ -53,8 +53,8 @@ def make_request_total(s_since,s_until):
             'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+s_since+' until '+s_until+' LIMIT MAX") {\ntotalResult results\n }\n }\n }\n}\n',
             'variables': '',
             }
-            
             response = requests.post('https://api.newrelic.com/graphql', headers=headers, json=json_data, timeout=30)
+            logging.info("Response: "+str(response.json()))
             if total_results_return :
                 data = json.loads(json.dumps(response.json()['data']['actor']['account']['nrql']['totalResult']['count']))
             else:
