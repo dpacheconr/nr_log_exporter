@@ -109,7 +109,6 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
     c_iteration=iteration
     response = None
     global query_total
-    global total_results_return
     logging.info("Obtaining timeseries data with query: "+query_total+" since "+str(int(c_since))+" until "+str(int(c_until))+" TIMESERIES "+series)
     while response is None:
         try:
@@ -117,7 +116,7 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
             'API-Key': NEW_RELIC_API_KEY,
             }
             json_data = {
-            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\n totalResult results\n }\n }\n }\n}\n',
+            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\nresults\n }\n }\n }\n}\n',
             'variables': '',
             }
             
