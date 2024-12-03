@@ -54,8 +54,10 @@ if "QUERY_TOTAL" in os.environ and os.getenv('QUERY_TOTAL') != "":
     query_total=os.getenv("QUERY_TOTAL")
     query_total=query_total.replace("FACET","FACET eventtype(),")
     query=query.replace("SELECT","SELECT eventtype(),")
+    total_results_return = True
 else:
     query_total= query.replace("*","count(*)")
+    total_results_return = False
     
 logging.info("Query total: "+query_total)
 script_version = "02122024"

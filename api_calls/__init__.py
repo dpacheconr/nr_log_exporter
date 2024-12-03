@@ -41,6 +41,7 @@ def make_request_total(s_since,s_until):
     global total_number_records
     response = None
     global query_total
+    global total_results_return
     logging.info("Querying total number records with query: "+query_total+" since "+s_since+" until "+s_until+" LIMIT MAX")
     while response is None:
         try:
@@ -49,11 +50,15 @@ def make_request_total(s_since,s_until):
             }
 
             json_data = {
-            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+s_since+' until '+s_until+' LIMIT MAX") {\ntotalResult\n }\n }\n }\n}\n',
+            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+s_since+' until '+s_until+' LIMIT MAX") {\ntotalResult results\n }\n }\n }\n}\n',
             'variables': '',
             }
+            
             response = requests.post('https://api.newrelic.com/graphql', headers=headers, json=json_data, timeout=30)
-            data = json.loads(json.dumps(response.json()['data']['actor']['account']['nrql']['totalResult']['count']))
+            if total_results_return :
+                data = json.loads(json.dumps(response.json()['data']['actor']['account']['nrql']['totalResult']['count']))
+            else:
+                data = json.loads(json.dumps(response.json()['data']['actor']['account']['nrql']['results'][0]['count']))
             total_number_records=data
             logging.info("Total number records in select period is: "+ str(total_number_records))
             
@@ -104,6 +109,7 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
     c_iteration=iteration
     response = None
     global query_total
+    global total_results_return
     logging.info("Obtaining timeseries data with query: "+query_total+" since "+str(int(c_since))+" until "+str(int(c_until))+" TIMESERIES "+series)
     while response is None:
         try:
@@ -111,17 +117,16 @@ async def make_request_timeseries_async(session,unix_time_since,unix_time_to,ser
             'API-Key': NEW_RELIC_API_KEY,
             }
             json_data = {
-            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\n totalResult\n }\n }\n }\n}\n',
+            'query': '{\n actor {\n account(id: '+NEW_ACCOUNT_ID+') {\n nrql(query: "'+query_total+' since '+str(int(c_since))+' until '+str(int(c_until))+' TIMESERIES '+series+'") {\n totalResult results\n }\n }\n }\n}\n',
             'variables': '',
             }
             
             async with session.post('https://api.newrelic.com/graphql',headers=headers,json=json_data, timeout=30) as resp:
                 response = await resp.json()
-                data = response['data']['actor']['account']['nrql']['totalResult']
+                data = response['data']['actor']['account']['nrql']['results']
                 c_iteration+=1
                 for item in data:
                     c_data=item
-                    c_data
                     requests_queue.put([c_data,c_iteration,series,iteration])        
         except:
             logging.error("Unable to obtain data from API for this timeseries -> "+str(datetime.datetime.fromtimestamp(int(c_since))) + " and " + str(datetime.datetime.fromtimestamp(int(c_until)))+ ", will retry.")
